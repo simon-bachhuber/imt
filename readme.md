@@ -1,5 +1,9 @@
 # High-level Interface for Inertial Motion Tracking
 
+## Installation
+
+```pip install git+https://github.com/simon-bachhuber/imt.git```
+
 # Example for three-segment KC
 
 ```python
