@@ -1,0 +1,51 @@
+# High-level Interface for Inertial Motion Tracking
+
+# Example for three-segment KC
+
+```python
+import imt
+import numpy as np
+
+# Assuming the Solver class is implemented as provided earlier
+# Define a graph with one body connecting to the world (0) and two child bodies (1 and 2)
+graph = [-1, 0, 0]
+problem = "1D2D3D"
+Ts = 0.01  # Sampling time (100 Hz)
+
+# Initialize the solver
+solver = imt.Solver(graph, problem, Ts)
+
+# Define IMU data for the bodies (non-batched)
+imu_data = {
+    0: {"acc": np.array([0.0, 0.0, 9.81]), "gyr": np.array([0.1, 0.2, 0.3])},
+    1: {"acc": np.array([0.0, 0.0, 9.81]), "gyr": np.array([0.2, 0.3, 0.4])},
+    2: {"acc": np.array([0.0, 0.0, 9.81]), "gyr": np.array([0.3, 0.4, 0.5])},
+}
+
+# Process the IMU data to compute body-to-world orientations
+quaternions = solver.step(imu_data)
+print("Quaternions (non-batched):", quaternions)
+
+# Reset the solver afterwards
+solver.reset()
+
+# Define time-batched IMU data for the bodies
+imu_data_batched = {
+    0: {
+        "acc": np.array([[0.0, 0.0, 9.81], [0.0, 0.0, 9.81], [0.0, 0.0, 9.81]]),
+        "gyr": np.array([[0.1, 0.2, 0.3], [0.2, 0.3, 0.4], [0.3, 0.4, 0.5]])
+    },
+    1: {
+        "acc": np.array([[0.0, 0.0, 9.81], [0.0, 0.0, 9.81], [0.0, 0.0, 9.81]]),
+        "gyr": np.array([[0.2, 0.3, 0.4], [0.3, 0.4, 0.5], [0.4, 0.5, 0.6]])
+    },
+    2: {
+        "acc": np.array([[0.0, 0.0, 9.81], [0.0, 0.0, 9.81], [0.0, 0.0, 9.81]]),
+        "gyr": np.array([[0.2, 0.3, 0.4], [0.3, 0.4, 0.5], [0.4, 0.5, 0.6]])
+    },
+}
+
+# Process the time-batched IMU data to compute body-to-world orientations
+quaternions_batched = solver.step(imu_data_batched)
+print("Quaternions (time-batched):", quaternions_batched)
+```
