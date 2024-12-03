@@ -10,10 +10,13 @@
 import imt
 import numpy as np
 
-# Assuming the Solver class is implemented as provided earlier
-# Define a graph with one body connecting to the world (0) and two child bodies (1 and 2)
+# Define a graph with one body connecting to the world/earth (0) and two child bodies (1 and 2)
 graph = [-1, 0, 0]
+# Make no assumption on the type of joint, so it could be either 1D, 2D, or 3D rotational
+# joint that connects two bodies (excluding the bodies that connect to world, 
+# those are always free joints)
 problem = "1D2D3D"
+# The sampling rate of the IMU data
 Ts = 0.01  # Sampling time (100 Hz)
 
 # Initialize the solver
