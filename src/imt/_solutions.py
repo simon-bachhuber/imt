@@ -1,3 +1,4 @@
+import copy
 from pathlib import Path
 
 import numpy as np
@@ -37,6 +38,9 @@ class Solution:
     def setTs(self, Ts: float) -> None:
         self.Ts = Ts
 
+    def copy(self):
+        return copy.deepcopy(self)
+
 
 class ONNX_Solution(Solution):
     hidden_dim: int
@@ -49,6 +53,10 @@ class ONNX_Solution(Solution):
 
     def reset(self):
         self.state = np.zeros((self.hidden_dim,), dtype=np.float32)
+
+    @classmethod
+    def copy(cls):
+        return cls()
 
 
 class Online_RelOri_1D2D3D_Solution(ONNX_Solution):
@@ -80,7 +88,7 @@ class VQF_Solution(Solution):
 
     @staticmethod
     def _update_and_get(vqf, a, g, m):
-        vqf.update(g.copy(), a.copy(), m.copy() if m else None)
+        vqf.update(g.copy(), a.copy(), m.copy() if m is not None else None)
         if m is None:
             return vqf.getQuat6D()
         else:

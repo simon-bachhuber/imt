@@ -73,6 +73,9 @@ class Solver:
         self._graph = Graph(graph)
         self._graph.assert_valid()
 
+        # create deep-copy because the user might have used one instance mutliple times
+        solutions = [s.copy() for s in solutions]
+
         for sub_solver in solutions:
             if isinstance(sub_solver, Online_RelOri_1D2D3D_Solution):
                 assert (
