@@ -1,3 +1,5 @@
+![gait-example](media/gait_demo.gif)
+
 # High-level Interface for Inertial Motion Tracking
 
 ## Installation
@@ -12,10 +14,18 @@ import numpy as np
 
 # Define a graph with one body connecting to the world/earth (0) and two child bodies (1 and 2)
 graph = [-1, 0, 0]
-# Make no assumption on the type of joint, so it could be either 1D, 2D, or 3D rotational
-# joint that connects two bodies (excluding the bodies that connect to world, 
-# those are always free joints)
-problem = "1D2D3D"
+
+# Define the solutions that are used for solving the relative orientation subproblems in the graph
+solutions = [
+    # use `vqf` because this body connects to earth, so there is no constraint to exploit
+    imt.solutions.VQF_Solution(),
+    # let's assume there is a 1-DOF joint between body '1' and body '0'
+    imt.solutions.QMT_HeadingConstraintSolution(dof=1),
+    # let's assume we don't know how many DOFs there are between body '2' and body '0', so we
+    # will use a general-purpose solution (but which will be less accurate)
+    imt.solutions.Online_RelOri_1D2D3D_Solution()
+]
+
 # The sampling rate of the IMU data
 Ts = 0.01  # Sampling time (100 Hz)
 
@@ -32,6 +42,10 @@ imu_data = {
 # Process the IMU data to compute body-to-world orientations
 quaternions = solver.step(imu_data)
 print("Quaternions (non-batched):", quaternions)
+# so the '0' entry is the quaternion from body '0' to body '-1' (earth)
+# similarly, the '1' entry is the quaterion from body '1' to body '0'
+# finally, the '2' entry is the quaterion from body '2' to body '0'
+>>> {0: array([...]), 1: array([...]), 2: array([...])}
 
 # Reset the solver afterwards
 solver.reset()
@@ -55,4 +69,5 @@ imu_data_batched = {
 # Process the time-batched IMU data to compute body-to-world orientations
 quaternions_batched = solver.step(imu_data_batched)
 print("Quaternions (time-batched):", quaternions_batched)
+>>> {0: array([[...]]), 1: array([[...]]), 2: array([[...]])}
 ```

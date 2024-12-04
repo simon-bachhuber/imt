@@ -1,21 +1,16 @@
 import numpy as np
-import tree
 
 from imt._graph import Graph
-from imt._solutions import Online_RelOri_1D2D3D
+from imt._solutions import Online_RelOri_1D2D3D_Solution
 from imt._solutions import Solution
-from imt._solutions import VQF_Solution
 
 # body number <integer> -> {'acc': ..., 'gyr': ..., 'mag': ... (optional)}
 D = dict[int, dict[str, np.ndarray]]
 
 
-_valid_problem_strings = ["1D2D3D"]
-
-
 class Solver:
 
-    def __init__(self, graph: list[int], problem: str, Ts: float):
+    def __init__(self, graph: list[int], solutions: list[Solution], Ts: float):
         """
         Initializes the `Solver` with a graph of bodies, problem type, and sampling time.
 
@@ -24,77 +19,69 @@ class Solver:
                 bodies. Each index corresponds to a body, and the value at that index
                 specifies the parent body. The special integer `-1` represents the
                 "world body" (i.e., a root node with no parent).
-            problem (str): A string specifying the problem type. Must be one of the
-                predefined valid problem types (e.g., "1D2D3D").
+            solutions (list[Solution]): A list of solutions that are used for each two-
+                segment sub-kinematic-chain in the problem to solve for the relative
+                orientation between the two. Note that the connection to earth is also
+                considered a two-segment chain, so for bodies that connect to `-1` it
+                is recommended to use `VQF_Solution`
             Ts (float): The sampling time in seconds. Currently, only `0.01` (100 Hz)
                 is supported. Resampling should be done externally if the data is at
                 a different frequency.
 
-        Raises:
-            AssertionError: If `problem` is not in the list of valid problem strings.
-            AssertionError: If `Ts` is not `0.01`.
-
-        Notes:
-            - The `Solver` creates sub-solvers for each body in the graph.
-            For world bodies (`parent == -1`), the sub-solver uses a default
-            orientation solution (`VQF_Solution`). For other bodies, it uses a
-            relative orientation solution (`Online_RelOri_1D2D3D`).
-
-
         Example:
-            >>> # Define a graph with one body connecting to world (0) and
-            >>> # two child bodies (1 and 2)
-            >>> graph = [-1, 0, 0]
-            >>> problem = "1D2D3D"
+            >>> # Define a graph with one body (body 0) connecting to world (-1) and
+            >>> # one body (body 1) connecting to body 0
+            >>> graph = [-1, 0]
+            >>> solutions = [imt.solutions.VQF_Solution()] * 2
             >>> Ts = 0.01  # Sampling time (100 Hz)
-            >>> solver = Solver(graph, problem, Ts)
+            >>> solver = Solver(graph, solutions, Ts)
             >>>
-            >>> # Define IMU data for the bodies
+            >>> # Define IMU data for the bodies, here we provide 'mag' data as well because
+            >>> # we use `VQF` for everything and without magnetometer the heading would be
+            >>> # incorrect
             >>> imu_data = {
-            ...     0: {"acc": np.array([0.0, 0.0, 9.81]), "gyr": np.array([0.1, 0.2, 0.3])},
-            ...     1: {"acc": np.array([0.0, 0.0, 9.81]), "gyr": np.array([0.2, 0.3, 0.4])},
-            ...     2: {"acc": np.array([0.0, 0.0, 9.81]), "gyr": np.array([0.3, 0.4, 0.5])},
+            ...     0: {"acc": np.array([0.0, 0.0, 9.81]), "gyr": np.array([0.1, 0.2, 0.3]),
+            ...         "mag": np.array([1.0, 0, 0])},
+            ...     1: {"acc": np.array([0.0, 0.0, 9.81]), "gyr": np.array([0.2, 0.3, 0.4]),
+            ...         "mag": np.array([0.5, 0.4, 0])},
             ... }
             >>> # Process the IMU data to compute body-to-world orientations
             >>> quaternions = solver.step(imu_data)
             >>> print(quaternions)
-            {0: array([...]), 1: array([...]), 2: array([...])}
+            >>> # so the '0' entry is the quaternion from body '0' to body '-1' (earth)
+            >>> # similarly, the '1' entry is the quaterion from body '1' to body '0'
+            {0: array([...]), 1: array([...])}
             >>> # reset the solver afterwards
             >>> solver.reset()
             >>> # `.step` also accepts time-batched data
             >>> imu_data = {
             ...     0: {
             ...         "acc": np.array([[0.0, 0.0, 9.81], [0.0, 0.0, 9.81], [0.0, 0.0, 9.81]]),
-            ...         "gyr": np.array([[0.1, 0.2, 0.3], [0.2, 0.3, 0.4], [0.3, 0.4, 0.5]])
+            ...         "gyr": np.array([[0.1, 0.2, 0.3], [0.2, 0.3, 0.4], [0.3, 0.4, 0.5]]),
+            ...         "mag": ...
             ...     },
             ...     1: {
             ...         "acc": np.array([[0.0, 0.0, 9.81], [0.0, 0.0, 9.81], [0.0, 0.0, 9.81]]),
-            ...         "gyr": np.array([[0.2, 0.3, 0.4], [0.3, 0.4, 0.5], [0.4, 0.5, 0.6]])
-            ...     }
-            ...     2: {
-            ...         "acc": np.array([[0.0, 0.0, 9.81], [0.0, 0.0, 9.81], [0.0, 0.0, 9.81]]),
-            ...         "gyr": np.array([[0.2, 0.3, 0.4], [0.3, 0.4, 0.5], [0.4, 0.5, 0.6]])
+            ...         "gyr": np.array([[0.2, 0.3, 0.4], [0.3, 0.4, 0.5], [0.4, 0.5, 0.6]]),
+            ...         "mag": ...
             ...     }
             >>> }
             >>> quaternions = solver.step(imu_data)
             >>> print(quaternions)
-            {0: array([[...]]), 1: array([[...]]), 2: array([[...]])}
+            {0: array([[...]]), 1: array([[...]])}
         """  # noqa: E501
         self._graph = Graph(graph)
         self._graph.assert_valid()
 
-        self._problem = problem
-        assert problem in _valid_problem_strings
+        for sub_solver in solutions:
+            if isinstance(sub_solver, Online_RelOri_1D2D3D_Solution):
+                assert (
+                    Ts == 0.01
+                ), "Currently `Online_RelOri_1D2D3D` only supports 100Hz; "
+                "Resample using e.g. `qmt.nanInterp`"
+            sub_solver.setTs(Ts)
 
-        assert (
-            Ts == 0.01
-        ), "Currently, only 100Hz supported; Resample using e.g. `qmt.nanInterp`"
-
-        self._sub_solvers: list[Solution] = [
-            VQF_Solution(Ts) if self._graph.parent(i) == -1 else Online_RelOri_1D2D3D()
-            for i in range(self._graph.n_bodies())
-        ]
-
+        self._sub_solvers = solutions
         self.reset()
 
     def step(self, imu_data: D):
@@ -122,26 +109,23 @@ class Solver:
             - The forward kinematics are applied to combine the orientations of all bodies
             in the system.
         """  # noqa: E501
-        # imu_data must be a dictionary that contains arrays that are either 1D or 2D
-        shape = imu_data[0]["acc"].shape
-        batched = len(shape) > 1
-
-        if batched:
-            T = shape[0]
-            quats = np.zeros((T, self._graph.n_bodies(), 4))
-            for t in range(T):
-                quats[t] = self._step(tree.map_structure(lambda a: a[t], imu_data))
-            quats = quats.transpose((1, 0, 2))
-        else:
-            quats = self._step(imu_data)
-
+        quats = self._step(imu_data)
         quats = self._graph.forward_kinematics([q for q in quats])
         # returns 1D or 2D array of body-to-eps quaterions
         return {i: q for i, q in enumerate(quats)}
 
     def _step(self, imu_data: D) -> np.ndarray:
-        "Returns array of body-to-parent orientations with shape (n_bodies, 4)"
-        quats = np.zeros((self._graph.n_bodies(), 4))
+        """Returns array of body-to-parent orientations with shape (n_bodies, T, 4) or
+        (n_bodies, 4)"""
+        shape = imu_data[0]["acc"].shape
+        batched = len(shape) > 1
+        if batched:
+            T = shape[0]
+            quats = np.zeros((self._graph.n_bodies(), T, 4))
+        else:
+            T = None
+            quats = np.zeros((self._graph.n_bodies(), 4))
+
         for i, sub_solver in enumerate(self._sub_solvers):
             p = self._graph.parent(i)
 
@@ -158,7 +142,7 @@ class Solver:
             mag2 = imu_data_i["mag"] if "mag" in imu_data_i else None
 
             quats[i] = sub_solver.apply(
-                acc1=acc1, gyr1=gyr1, mag1=mag1, acc2=acc2, gyr2=gyr2, mag2=mag2
+                acc1=acc1, gyr1=gyr1, mag1=mag1, acc2=acc2, gyr2=gyr2, mag2=mag2, T=T
             )
 
         return quats
