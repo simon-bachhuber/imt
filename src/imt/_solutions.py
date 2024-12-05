@@ -1,5 +1,6 @@
 import copy
 from pathlib import Path
+import warnings
 
 import numpy as np
 import onnxruntime as ort
@@ -77,7 +78,65 @@ class Online_RelOri_1D2D3D_Solution(ONNX_Solution):
         return qhat
 
 
-class VQF_Solution(Solution):
+class _VQF_Mixin_MagConsistency:
+    "A mixin class to enforce consistency checks on magnetic data inputs"
+
+    def __init__(self, strict: bool):
+        self.strict = strict
+
+    def _process_mag(self, *mags):
+        if self.strict and any([m is None for m in mags]):
+            return len(mags) * [None]
+        return mags
+
+
+class VQF_Solution(_VQF_Mixin_MagConsistency, Solution):
+    def __init__(self, offline: bool = False, use_mag_only_if_both: bool = False):
+        """
+        Initializes a VQF Solution for a pair of bodies. 9D VQF is magnetic data is
+        provided, else 6D VQF.
+
+        Args:
+            offline (bool): If True, enables offline mode, which performs orientation
+                estimation for entire time-series data in a batch. If False, operates
+                in online mode, processing data step by step.
+            use_mag_only_if_both (bool): If True, magnetic data will only be used if
+                magnetometer inputs are available for both the body and its parent. If
+                False, uses alaways 9D VQF if magnetic data is provided.
+        """
+        super().__init__(use_mag_only_if_both)
+        self.offline = offline
+
+    def apply(self, T: int | float, acc1, acc2, gyr1, gyr2, mag1, mag2):
+        mag1, mag2 = self._process_mag(mag1, mag2)
+
+        if T is None:
+            if self.offline:
+                warnings.warn(
+                    "`offline` is enabled but no time-series provided, "
+                    "switching to `offline`=`False`"
+                )
+            return self._apply_timestep(acc1, acc2, gyr1, gyr2, mag1, mag2)
+
+        if self.offline:
+            warnlimit = 5
+            duration = T * self.Ts
+            if duration < warnlimit:
+                warnings.warn(
+                    "`offline` is enabled but timeseries is shorter "
+                    f"than the warning limit, {duration}s < {warnlimit}s"
+                )
+            if acc1 is not None and gyr1 is not None:
+                q1 = qmt.oriEstOfflineVQF(gyr1, acc1, mag1, params=dict(Ts=self.Ts))
+            else:
+                q1 = np.array([1.0, 0, 0, 0])
+            q2 = qmt.oriEstOfflineVQF(gyr2, acc2, mag2, params=dict(Ts=self.Ts))
+            return qmt.qmult(qmt.qinv(q1), q2)
+        else:
+            return super().apply(
+                T=T, acc1=acc1, acc2=acc2, gyr1=gyr1, gyr2=gyr2, mag1=mag1, mag2=mag2
+            )
+
     def _apply_timestep(self, acc1, acc2, gyr1, gyr2, mag1, mag2):
         if acc1 is not None and gyr1 is not None:
             q1 = self._update_and_get(self.vqf1, acc1, gyr1, mag1)
@@ -99,14 +158,17 @@ class VQF_Solution(Solution):
         self.vqf2 = VQF(self.Ts)
 
 
-class QMT_HeadingConstraintSolution(Solution):
+class QMT_HeadingConstraintSolution(_VQF_Mixin_MagConsistency, Solution):
     def __init__(
         self,
         dof: int,
         axes_directions: np.ndarray | None = None,
         method_1d: str = "1d_corr",
         method_2d: str = "gyro",
+        use_mag_only_if_both: bool = False,
     ):
+        super().__init__(use_mag_only_if_both)
+
         if axes_directions is not None:
             self.axes_directions = np.atleast_2d(axes_directions)
             self.axes_directions /= np.linalg.norm(
@@ -128,10 +190,15 @@ class QMT_HeadingConstraintSolution(Solution):
 
     def apply(self, acc1, acc2, gyr1, gyr2, mag1, mag2, T: int | None):
         if T is None:
-            raise Exception(
+            raise NotImplementedError(
                 "qmt-based heading correction does not allow for online application; "
                 "please time-batch your imu data"
             )
+
+        if acc1 is None or gyr1 is None:
+            raise Exception("Can not be used for bodies with parent=-1")
+
+        mag1, mag2 = self._process_mag(mag1, mag2)
 
         q1 = qmt.oriEstOfflineVQF(gyr1, acc1, mag1, params=dict(Ts=self.Ts))
         q2 = qmt.oriEstOfflineVQF(gyr2, acc2, mag2, params=dict(Ts=self.Ts))
