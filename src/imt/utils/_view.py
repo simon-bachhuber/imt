@@ -145,7 +145,7 @@ def view(
     extras: dict[int | str, dict[str, np.ndarray]],
     hz: float,
     mode: str = "window",
-    offscreen_mode_options=dict(camid=None, depth=False),
+    offscreen_mode_options=dict(camid=None, depth=False, github=False),
     global_translation: Optional[np.ndarray] = None,
     show_stars: bool = True,
     show_floor: bool = True,
@@ -327,7 +327,10 @@ def view(
         return
     else:
         if output_path is None:
-            mediapy.show_video(frames, fps=fps)
+            options = {}
+            if offscreen_mode_options["github"]:
+                options.update(dict(codec="gif"))
+            mediapy.show_video(frames, fps=fps, height=height, **options)
         else:
             mediapy.write_video(
                 output_path,
