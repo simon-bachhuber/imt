@@ -212,6 +212,7 @@ def view(
             output_path = None
         else:
             output_path = offscreen_mode_options.pop("output_path")
+    gif_codec_for_github = offscreen_mode_options.pop("github")
 
     # these are joint-to-joint position vectors and joint-to-imu positions
     # body 0: we can skip it because we can compensate it with just the
@@ -328,7 +329,7 @@ def view(
     else:
         if output_path is None:
             options = {}
-            if offscreen_mode_options["github"]:
+            if gif_codec_for_github:
                 options.update(dict(codec="gif"))
             mediapy.show_video(frames, fps=fps, height=height, **options)
         else:
