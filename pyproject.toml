@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "imt-imt"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
   { name="Simon Bachhuber", email="simon.bachhuber@fau.de" },
 ]
@@ -19,7 +19,8 @@ classifiers = [
 dependencies = [
     "qmt",
     "onnxruntime",
-    "dm-tree"
+    "dm-tree",
+    "scipy",
 ]
 
 [project.urls]

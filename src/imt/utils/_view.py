@@ -16,6 +16,8 @@ import qmt
 import ring
 from ring.rendering.mujoco_render import MujocoScene
 
+import imt
+
 
 def _mujoco_model_to_string(model):
 
@@ -98,15 +100,7 @@ def create_xml_from_graph(graph, positions, skip_0th_body_imu: bool = True):
             body = SubElement(
                 worldbody, "body", name=body_name, joint="free", pos=body_pos
             )
-            SubElement(body, "geom", type="xyz", dim=".06")
-            SubElement(
-                body,
-                "geom",
-                type="box",
-                mass="0.1",
-                dim="0.05 0.03 0.02",
-                color="dustin_exp_orange",
-            )
+            SubElement(body, "geom", type="xyz", dim=".05")
         else:
             # Get the parent body
             parent_body = body_elements[str(parent_idx)]
@@ -124,7 +118,7 @@ def create_xml_from_graph(graph, positions, skip_0th_body_imu: bool = True):
             imu_body = SubElement(
                 body, "body", name=f"imu{idx}", joint="frozen", pos=imu_pos
             )
-            SubElement(imu_body, "geom", type="xyz", dim=".06")
+            SubElement(imu_body, "geom", type="xyz", dim=".04")
             SubElement(
                 imu_body,
                 "geom",
@@ -146,9 +140,9 @@ def create_xml_from_graph(graph, positions, skip_0th_body_imu: bool = True):
 
 
 def view(
-    graph: list[int],
-    body_to_eps_rots: dict[int, np.ndarray],
-    extras: dict[int, dict[str, np.ndarray]],
+    graph: list[int | str],
+    body_to_eps_rots: dict[int | str, np.ndarray],
+    extras: dict[int | str, dict[str, np.ndarray]],
     hz: float,
     mode: str = "window",
     offscreen_mode_options=dict(camid=None, depth=False),
@@ -160,6 +154,7 @@ def view(
     width: Optional[int] = None,
     height: Optional[int] = None,
     show_every_nth_frame: int = 1,
+    body_names: Optional[list[str]] = None,
     **kwargs,
 ) -> None:
     """
@@ -196,17 +191,27 @@ def view(
         show_every_nth_frame (int, optional): Number of frames to show during rendering.
             Selecting `1` shows every frame while e.g. `4` shows every fourth frame.
             Defaults to 1.
+        body_names (Optional[list[str]]): Names of bodies, must be provided if either
+            `graph` or `body_to_eps_rots` or `extras` uses these names.
         **kwargs: Additional keyword arguments passed to the rendering scene.
 
     Returns:
         None
     """  # noqa: E501
 
+    graph = imt.Solver._guarantuee_body_numbers(body_names, graph)
+    body_to_eps_rots = imt.Solver._guarantuee_body_numbers(body_names, body_to_eps_rots)
+    extras = imt.Solver._guarantuee_body_numbers(body_names, extras)
+
     if mode == "offscreen":
-        assert (
-            "output_path" in offscreen_mode_options
-        ), "Please provide the path to where the .mp4 will be saved"
-        output_path = offscreen_mode_options.pop("output_path")
+        if "output_path" not in offscreen_mode_options:
+            print(
+                "To save the video permanently, provide the path to where the .mp4 is",
+                " saved by specifying `offscreen_mode_options=dict(output_path=...)`",
+            )
+            output_path = None
+        else:
+            output_path = offscreen_mode_options.pop("output_path")
 
     # these are joint-to-joint position vectors and joint-to-imu positions
     # body 0: we can skip it because we can compensate it with just the
@@ -225,7 +230,9 @@ def view(
             joint_joint_pos += extras[p]["joint-center-to-body2"].copy()
         positions[i] = [joint_joint_pos, imu_pos]
 
-    sys = ring.System.create(create_xml_from_graph(graph, positions))
+    sys = ring.System.create(
+        create_xml_from_graph(graph, positions, skip_0th_body_imu=False)
+    )
     geoms = ring.rendering.base_render._replace_xyz_geoms(sys.geoms)
     geoms = [ring.rendering.base_render._color_to_rgba(g) for g in geoms]
     scene = MujocoScene(
@@ -319,8 +326,11 @@ def view(
     if mode == "window":
         return
     else:
-        mediapy.write_video(
-            output_path,
-            frames,
-            fps=fps,
-        )
+        if output_path is None:
+            mediapy.show_video(frames, fps=fps)
+        else:
+            mediapy.write_video(
+                output_path,
+                frames,
+                fps=fps,
+            )
