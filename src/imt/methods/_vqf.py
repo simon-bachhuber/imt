@@ -1,10 +1,14 @@
+"""
+VQF method from https://www.sciencedirect.com/science/article/pii/S156625352200183X
+"""
+
 import warnings
 
 import numpy as np
 import qmt
 from vqf import VQF as _VQF
 
-from ._method import Method
+from .._base import Method
 
 
 class VQF(Method):

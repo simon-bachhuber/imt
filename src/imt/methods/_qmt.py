@@ -1,7 +1,11 @@
+"""
+Heading correction methods from https://github.com/dlaidig/qmt
+"""
+
 import numpy as np
 import qmt
 
-from ._method import Method
+from .._base import Method
 
 
 class HeadCor(Method):

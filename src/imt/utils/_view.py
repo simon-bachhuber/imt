@@ -145,15 +145,15 @@ def view(
     extras: dict[int | str, dict[str, np.ndarray]],
     hz: float,
     mode: str = "window",
-    offscreen_mode_options=dict(camid=None, depth=False, github=False),
+    offscreen_mode_options=dict(),
     global_translation: Optional[np.ndarray] = None,
     show_stars: bool = True,
-    show_floor: bool = True,
+    show_floor: bool = False,
     show_joint_to_joint: bool = True,
     show_joint_to_imu: bool = True,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    show_every_nth_frame: int = 1,
+    show_every_nth_frame: int = 4,
     body_names: Optional[list[str]] = None,
     **kwargs,
 ) -> None:
@@ -198,6 +198,11 @@ def view(
     Returns:
         None
     """  # noqa: E501
+    offscreen_mode_options_defaults = dict(camid=None, depth=False, github=False)
+    offscreen_mode_options_defaults.update(offscreen_mode_options)
+    offscreen_mode_options = offscreen_mode_options_defaults
+
+    body_to_eps_rots = body_to_eps_rots.copy()
 
     graph = imt.Solver._guarantuee_body_numbers(body_names, graph)
     body_to_eps_rots = imt.Solver._guarantuee_body_numbers(body_names, body_to_eps_rots)
@@ -327,14 +332,10 @@ def view(
     if mode == "window":
         return
     else:
+        options = {}
+        if gif_codec_for_github:
+            options.update(dict(codec="gif"))
         if output_path is None:
-            options = {}
-            if gif_codec_for_github:
-                options.update(dict(codec="gif"))
             mediapy.show_video(frames, fps=fps, height=height, **options)
         else:
-            mediapy.write_video(
-                output_path,
-                frames,
-                fps=fps,
-            )
+            mediapy.write_video(output_path, frames, fps=fps, **options)

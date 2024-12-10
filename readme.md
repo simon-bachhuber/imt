@@ -4,21 +4,49 @@
 
 This python package combines many well-established methods to provide a unified interface applicable to diverse inertial motion tracking tasks.
 
-Plug-and-play solutions for standard use-cases are provided, such as
-- knee joint angle tracking (see `examples/knee_angle_tracking.ipynb`)
-![knee-angle-tracking-example](media/knee_tracking.gif)
-- hip joint angle tracking
-- arm tracking
-- lower extremities / gait tracking (see `/examples/lower_extremities_*.ipynb`)
-- full-body motion capture
+> **ℹ️ Installation:**
+> 
+> You can install with `pip install git+https://github.com/simon-bachhuber/imt.git`.
+
+Plug-and-play solutions for standard use-cases are provided, such as:
+- Knee Joint Angle Tracking (see `examples/knee_angle_tracking.ipynb`)
+- Shoulder Joint Tracking (see `examples/shoulder_tracking.ipynb`)
+- Gait Tracking (see `/examples/lower_extremities_*.ipynb`)
+- Full-body Motion Capture (soon)
 
 Most methods can be applied both online, allowing for real-time motion tracking, as well as offline.
 
-## Installation
+## Knee Joint Angle Tracking
+```python
+import imt
 
-```pip install git+https://github.com/simon-bachhuber/imt.git```
+solver = imt.Solver(
+    graph=[-1, 0], 
+    methods=None, 
+    Ts=0.01, 
+    body_name=["thigh", "shank"]
+)
+imu_data = {"thigh": dict(acc=acc1, gyr=gyr1), "shank": dict(acc=acc2, gyr=gyr2)}
+quaternions, _ = solver.step(imu_data)
+```
+![knee-angle-tracking-example](media/knee_tracking.gif)
 
-## Example for three-segment KC
+## Shoulder Joint Tracking
+```python
+import imt
+
+solver = imt.Solver(
+    graph=[-1, 0], 
+    methods=None, 
+    Ts=0.01, 
+    body_name=["chest", "upperarm"]
+)
+imu_data = {"chest": dict(acc=acc1, gyr=gyr1), "upperarm": dict(acc=acc2, gyr=gyr2)}
+quaternions, _ = solver.step(imu_data)
+```
+![shoulder-joint-tracking-example](media/shoulder_tracking.gif)
+
+# Usage Example Three-Segment Kinematic Chain
 
 ```python
 import imt

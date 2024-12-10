@@ -1,11 +1,19 @@
+"""
+RING method from https://openreview.net/forum?id=h2C3rkn0zR
+"""
+
 import numpy as np
 import qmt
 
-from ._method import Method
+from .._base import Method
 
 
 class RING(Method):
-    def __init__(self, dof: int = 1, axes_directions: np.ndarray | None = None):
+    def __init__(
+        self,
+        dof: int = 1,
+        axes_directions: np.ndarray | None = None,
+    ):
         self.dof = dof
 
         if axes_directions is not None:

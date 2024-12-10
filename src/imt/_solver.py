@@ -11,7 +11,7 @@ class Solver:
     def __init__(
         self,
         graph: list[int | str],
-        methods: list[imt.methods.Method] | None,
+        methods: list[imt.Method] | None,
         Ts: float,
         body_names: Optional[list[str]] = None,
     ):
@@ -56,7 +56,7 @@ class Solver:
             ...         "mag": np.array([0.5, 0.4, 0])},
             ... }
             >>> # Process the IMU data to compute body-to-world orientations
-            >>> quaternions = solver.step(imu_data)
+            >>> quaternions, _ = solver.step(imu_data)
             >>> print(quaternions)
             >>> # so the '0' entry is the quaternion from body '0' to body '-1' (earth)
             >>> # similarly, the '1' entry is the quaterion from body '1' to body '0'
@@ -76,7 +76,7 @@ class Solver:
             ...         "mag": ...
             ...     }
             >>> }
-            >>> quaternions = solver.step(imu_data)
+            >>> quaternions, _ = solver.step(imu_data)
             >>> print(quaternions)
             {0: array([[...]]), 1: array([[...]])}
         """  # noqa: E501
@@ -105,9 +105,6 @@ class Solver:
         methods = [m.copy() for m in methods]
 
         for sub_solver in methods:
-            if isinstance(sub_solver, imt.methods._rnno._ONNX):
-                assert Ts == 0.01, "Currently `RNNO*` only supports 100Hz; "
-                "Resample using e.g. `qmt.nanInterp`"
             sub_solver.setTs(Ts)
 
         self._sub_solvers = methods

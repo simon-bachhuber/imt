@@ -1,9 +1,15 @@
+"""
+RNNO method from
+1) https://ieeexplore.ieee.org/document/9841375, and
+2) https://ieeexplore.ieee.org/document/10225275
+"""
+
 from pathlib import Path
 
 import numpy as np
 import onnxruntime as ort
 
-from ._method import Method
+from .._base import Method
 
 
 class _ONNX(Method):
@@ -41,6 +47,12 @@ class RNNO_rO(_ONNX):
         )
         return qhat, {}
 
+    def reset(self):
+        super().reset()
+        assert (
+            self.Ts == 0.01
+        ), "Currently `RNNO_rO` only supports 100Hz; Resample using eg `qmt.nanInterp`"
+
 
 class RNNO(_ONNX):
     "https://wandb.ai/simipixel/RING_2D/runs/b0ga1rx9/overview"
@@ -59,3 +71,9 @@ class RNNO(_ONNX):
             },
         )
         return qhat[1], {"incl-body1-to-eps": qhat[0]}
+
+    def reset(self):
+        super().reset()
+        assert (
+            self.Ts == 0.01
+        ), "Currently `RNNO` only supports 100Hz; Resample using eg `qmt.nanInterp`"

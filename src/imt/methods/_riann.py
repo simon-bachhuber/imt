@@ -6,7 +6,7 @@ import numpy as np
 import onnxruntime as rt
 import qmt
 
-from ._method import Method
+from .._base import Method
 
 _onnx_path = Path(__file__).parent.joinpath("onnx/riann.onnx")
 
