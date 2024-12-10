@@ -5,10 +5,11 @@
 This python package combines many well-established methods to provide a unified interface applicable to diverse inertial motion tracking tasks.
 
 Plug-and-play solutions for standard use-cases are provided, such as
-- knee joint angle tracking 
+- knee joint angle tracking (see `examples/knee_angle_tracking.ipynb`)
+![knee-angle-tracking-example](media/knee_tracking.gif)
 - hip joint angle tracking
 - arm tracking
-- lower extremities / gait tracking (see `/examples/lower_extremities.ipynb`)
+- lower extremities / gait tracking (see `/examples/lower_extremities_*.ipynb`)
 - full-body motion capture
 
 Most methods can be applied both online, allowing for real-time motion tracking, as well as offline.
@@ -54,7 +55,7 @@ imu_data = {
 }
 
 # Process the IMU data to compute body-to-world orientations
-quaternions = solver.step(imu_data)
+quaternions, _ = solver.step(imu_data)
 print("Quaternions (non-batched):", quaternions)
 # so the '0' entry is the quaternion from body '0' to body '-1' (earth)
 # similarly, the '1' entry is the quaterion from body '1' to body '0'
@@ -81,7 +82,7 @@ imu_data_batched = {
 }
 
 # Process the time-batched IMU data to compute body-to-world orientations
-quaternions_batched = solver.step(imu_data_batched)
+quaternions_batched, _ = solver.step(imu_data_batched)
 print("Quaternions (time-batched):", quaternions_batched)
 >>> {0: array([[...]]), 1: array([[...]]), 2: array([[...]])}
 ```
