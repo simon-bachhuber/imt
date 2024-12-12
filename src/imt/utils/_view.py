@@ -1,3 +1,5 @@
+import os
+import platform
 import tempfile
 import time
 from typing import Optional
@@ -19,7 +21,26 @@ from ring.rendering.mujoco_render import MujocoScene
 import imt
 
 
+def _mujoco_model_to_string_windows(model):
+    temp_filename = "temp_mujoco_model.xml"
+    try:
+        # Save the model to a temporary file
+        mujoco.mj_saveLastXML(temp_filename, model)
+        # Read the XML content back into a string
+        with open(temp_filename, "r") as file:
+            xml_string = file.read()
+    finally:
+        # Ensure the temporary file is deleted
+        if os.path.exists(temp_filename):
+            os.remove(temp_filename)
+
+    return xml_string
+
+
 def _mujoco_model_to_string(model):
+
+    if platform.system() == "Windows":
+        return _mujoco_model_to_string_windows(model)
 
     # Use a temporary file to save the XML
     with tempfile.NamedTemporaryFile(suffix=".xml", delete=True) as temp_file:
