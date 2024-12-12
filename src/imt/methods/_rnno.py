@@ -50,7 +50,7 @@ class RNNO_rO(_ONNX):
     def reset(self):
         super().reset()
         assert (
-            self.Ts == 0.01
+            self.getTs() == 0.01
         ), "Currently `RNNO_rO` only supports 100Hz; Resample using eg `qmt.nanInterp`"
 
 
@@ -75,5 +75,5 @@ class RNNO(_ONNX):
     def reset(self):
         super().reset()
         assert (
-            self.Ts == 0.01
+            self.getTs() == 0.01
         ), "Currently `RNNO` only supports 100Hz; Resample using eg `qmt.nanInterp`"

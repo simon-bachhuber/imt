@@ -50,10 +50,11 @@ class HeadCor(Method):
 
         mag1, mag2 = self._process_mag(mag1, mag2)
 
-        q1 = qmt.oriEstOfflineVQF(gyr1, acc1, mag1, params=dict(Ts=self.Ts))
-        q2 = qmt.oriEstOfflineVQF(gyr2, acc2, mag2, params=dict(Ts=self.Ts))
+        Ts = self.getTs()
+        q1 = qmt.oriEstOfflineVQF(gyr1, acc1, mag1, params=dict(Ts=Ts))
+        q2 = qmt.oriEstOfflineVQF(gyr2, acc2, mag2, params=dict(Ts=Ts))
 
-        ts = np.arange(T * self.Ts, step=self.Ts)
+        ts = np.arange(T * Ts, step=Ts)
         if self.dof == 1:
             if self.axes_directions is None:
                 axis_imu1, axis_imu2 = qmt.jointAxisEstHingeOlsson(

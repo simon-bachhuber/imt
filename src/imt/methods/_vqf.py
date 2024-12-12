@@ -41,17 +41,18 @@ class VQF(Method):
 
         if self.offline:
             warnlimit = 5
-            duration = T * self.Ts
+            Ts = self.getTs()
+            duration = T * Ts
             if duration < warnlimit:
                 warnings.warn(
                     "`offline` is enabled but timeseries is shorter "
                     f"than the warning limit, {duration}s < {warnlimit}s"
                 )
             if acc1 is not None and gyr1 is not None:
-                q1 = qmt.oriEstOfflineVQF(gyr1, acc1, mag1, params=dict(Ts=self.Ts))
+                q1 = qmt.oriEstOfflineVQF(gyr1, acc1, mag1, params=dict(Ts=Ts))
             else:
                 q1 = np.array([1.0, 0, 0, 0])
-            q2 = qmt.oriEstOfflineVQF(gyr2, acc2, mag2, params=dict(Ts=self.Ts))
+            q2 = qmt.oriEstOfflineVQF(gyr2, acc2, mag2, params=dict(Ts=Ts))
             return qmt.qmult(qmt.qinv(q1), q2), {}
         else:
             return super().apply(
@@ -75,8 +76,9 @@ class VQF(Method):
             return vqf.getQuat9D()
 
     def reset(self):
-        self.vqf1 = _VQF(self.Ts)
-        self.vqf2 = _VQF(self.Ts)
+        Ts = self.getTs()
+        self.vqf1 = _VQF(Ts)
+        self.vqf2 = _VQF(Ts)
 
     def _process_mag(self, *mags):
         if self.strict and any([m is None for m in mags]):

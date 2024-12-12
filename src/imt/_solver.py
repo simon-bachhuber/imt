@@ -98,7 +98,12 @@ class Solver:
         # load default methods
         if methods is None:
             methods = [
-                imt.methods.VQF() if p == -1 else imt.methods.RNNO() for p in graph
+                (
+                    imt.methods.VQF()
+                    if p == -1
+                    else imt.wrappers.FractualStepping(imt.methods.RNNO(), 100.0)
+                )
+                for p in graph
             ]
 
         # create deep-copy because the user might have used one instance mutliple times

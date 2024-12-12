@@ -87,8 +87,8 @@ def _jpos_solve(
                 "you have provided Gyroscope and `phi` value in radians?"
             )
 
-    acc1 = _lpf(acc1, hz, 25)
-    acc2 = _lpf(acc2, hz, 25)
+    acc1 = _lpf(acc1, hz, 25 if hz > 50 else 15)
+    acc2 = _lpf(acc2, hz, 25 if hz > 50 else 15)
 
     gyrdot1 = _dot(gyr1, hz)
     gyrdot2 = _dot(gyr2, hz)
@@ -145,7 +145,7 @@ class JointPosition(MethodWrapper):
                 gyr1,
                 acc2,
                 gyr2,
-                1 / self.unwrapped.Ts,
+                1 / self.getTs(),
                 verbose=self.verbose,
             )
             _res = infos["final residual m/s**2"]

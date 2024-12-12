@@ -38,7 +38,7 @@ class DeadReckoning(MethodWrapper):
         qhat, extras = super().apply(T, **kwargs)
 
         gyr, acc, mag = kwargs["gyr2"], kwargs["acc2"], kwargs["mag2"]
-        Ts = self.unwrapped.Ts
+        Ts = self.getTs()
         out = offlineVQF(
             gyr.copy(), acc.copy(), mag if mag is None else mag.copy(), Ts, dict()
         )

@@ -30,7 +30,8 @@ class LPF(MethodWrapper):
             setattr(self, name, [])
         else:
             N = 1 if suffix == "quat" else 2
-            setattr(self, name, [_LPF(f, self.unwrapped.Ts) for _ in range(N)])
+            Ts = self.getTs()
+            setattr(self, name, [_LPF(f, Ts) for _ in range(N)])
 
     def apply(self, T, acc1, acc2, gyr1, gyr2, mag1, mag2):
         if self.acc_f_cutoff is not None:

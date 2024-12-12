@@ -58,7 +58,7 @@ class RING(Method):
     def reset(self):
         import ring
 
-        self.ringnet = ring.RING(list(range(-1, self.N - 1)), self.Ts, jit=True)
+        self.ringnet = ring.RING(list(range(-1, self.N - 1)), self.getTs(), jit=True)
         X = np.zeros((1, self.N, 9))
         _, self.state = self.ringnet.init(X=X)
 

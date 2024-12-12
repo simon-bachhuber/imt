@@ -47,9 +47,10 @@ class RIANN(Method):
         if T is None:
             raise Exception("`RIANN` does not support `online` application")
 
+        Ts = self.getTs()
         if acc1 is not None and gyr1 is not None:
-            q1 = self.predict(acc1, gyr1, 1 / self.Ts)
+            q1 = self.predict(acc1, gyr1, 1 / Ts)
         else:
             q1 = np.array([1.0, 0, 0, 0])
-        q2 = self.predict(acc2, gyr2, 1 / self.Ts)
+        q2 = self.predict(acc2, gyr2, 1 / Ts)
         return qmt.qmult(qmt.qinv(q1), q2), {}
