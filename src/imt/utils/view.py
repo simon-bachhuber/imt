@@ -15,7 +15,7 @@ try:
 
     del mujoco_viewer, ring
 except ImportError:
-    print(
+    raise Exception(
         "The `view` function requires `imt-ring` and `mujoco-python-viewer` "
         "package. Install with `pip install imt-ring mujoco-python-viewer"
     )
