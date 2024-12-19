@@ -218,3 +218,6 @@ class Solver:
         "Resets all internal state"
         for sub_solver in self._sub_solvers:
             sub_solver.reset()
+
+    def print_graph(self):
+        self._graph.print(self._body_names)
