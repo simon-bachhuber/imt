@@ -83,7 +83,7 @@ class MethodWrapper(Method):
     def reset(self):
         self._method.reset()
 
-    def apply(self, T, **kwargs):
+    def apply(self, T: int | None, **kwargs):
         return self._method.apply(T=T, **kwargs)
 
     def _apply_unrolled(
