@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "imt-imt"
-version = "0.0.8"
+version = "0.0.9"
 authors = [
   { name="Simon Bachhuber", email="simon.bachhuber@fau.de" },
 ]
@@ -34,4 +34,4 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-"imt.methods.onnx" = ["**/*.onnx"]
+"imt.methods.onnx" = ["**/*.onnx", "**/*.npy"]
