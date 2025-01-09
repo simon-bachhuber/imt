@@ -41,6 +41,7 @@ class HeadCor(Method):
             self.axes_directions /= np.linalg.norm(
                 self.axes_directions, axis=1, keepdims=True
             )
+            assert dof == self.axes_directions.shape[0]
         else:
             self.axes_directions = None
 
