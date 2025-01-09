@@ -2,10 +2,55 @@
 RING method from https://openreview.net/forum?id=h2C3rkn0zR
 """
 
+import warnings
+
 import numpy as np
 import qmt
 
 from .._base import Method
+
+
+class RING_2S(Method):
+    N = 2
+    F = 6
+
+    def apply(self, T, acc1, acc2, gyr1, gyr2, mag1, mag2):
+        X = np.zeros((1 if T is None else T, self.N, self.F))
+        assert acc1 is not None, "`RING_2S` only supports relative orientation"
+
+        X[:, 0, :3] = acc1 / 9.81
+        X[:, -1, :3] = acc2 / 9.81
+        X[:, 0, 3:6] = gyr1 / 2.2
+        X[:, -1, 3:6] = gyr2 / 2.2
+
+        qhat, self.state = self.ringnet.apply(X=X, state=self.state)
+        qhat = qhat[:, 1]
+
+        if T is None:
+            return qhat[0], {}
+        return qhat, {}
+
+    def setTs(self, Ts):
+        assert Ts == 0.01, (
+            "For sampling rates != 100Hz, "
+            + "please use `imt.wrappers.FractualStepping(imt.methods.RING())` instead"
+        )
+        return super().setTs(Ts)
+
+    def reset(self):
+        import ring
+
+        self.ringnet = ring.ml.RING(
+            params="/Users/simon/Downloads/0xd87430067580b75.pickle",
+            lam=(-1, 0),
+            hidden_state_dim=600,
+            stack_rnn_cells=2,
+            message_dim=400,
+            send_message_n_layers=0,
+            layernorm=True,
+        )
+        X = np.zeros((1, self.N, self.F))
+        _, self.state = self.ringnet.init(X=X)
 
 
 class RING(Method):
@@ -15,6 +60,13 @@ class RING(Method):
         axes_directions: np.ndarray | None = None,
     ):
         self.dof = dof
+
+        if dof > 1:
+            warnings.warn(
+                "Setting `dof` > 1 is an experimental feature that will likely produces"
+                + " incorrect results; you might be better of setting to `dof`=1 even"
+                + " for higher DOF joints"
+            )
 
         if axes_directions is not None:
             assert self.dof != 6

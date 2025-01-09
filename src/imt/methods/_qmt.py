@@ -12,12 +12,29 @@ class HeadCor(Method):
     def __init__(
         self,
         dof: int,
-        axes_directions: np.ndarray | None = None,
+        axes_directions: np.ndarray | None,
         method_1d: str = "1d_corr",
         method_2d: str = "euler",
         use_mag_only_if_both: bool = False,
+        offline_vqf: bool = False,
     ):
+        """Uses `VQF` + `qmt.headingCorrection`
+
+        Args:
+            dof (int): The DOF of the joint between two segments
+            axes_directions (np.ndarray | None): The joint axes directions of this joint
+            method_1d (str, optional): Method to use for 1D joint. Defaults to "1d_corr"
+            method_2d (str, optional): Method to use for 2D joint. Defaults to "euler".
+            use_mag_only_if_both (bool, optional): Use magnetometer measurements for VQF
+                only if both IMUs have magnetometer measurements. Defaults to False.
+            offline_vqf (bool, optional): If `True` uses offlineVQF else onlineVQF.
+                Defaults to False.
+
+        Raises:
+            Exception: If `dof` == 3
+        """
         self.strict = use_mag_only_if_both
+        self.offline_vqf = offline_vqf
 
         if axes_directions is not None:
             self.axes_directions = np.atleast_2d(axes_directions)
@@ -51,8 +68,9 @@ class HeadCor(Method):
         mag1, mag2 = self._process_mag(mag1, mag2)
 
         Ts = self.getTs()
-        q1 = qmt.oriEstOfflineVQF(gyr1, acc1, mag1, params=dict(Ts=Ts))
-        q2 = qmt.oriEstOfflineVQF(gyr2, acc2, mag2, params=dict(Ts=Ts))
+        _vqf = qmt.oriEstOfflineVQF if self.offline_vqf else qmt.oriEstVQF
+        q1 = _vqf(gyr1, acc1, mag1, params=dict(Ts=Ts))
+        q2 = _vqf(gyr2, acc2, mag2, params=dict(Ts=Ts))
 
         ts = np.arange(T * Ts, step=Ts)
         if self.dof == 1:
