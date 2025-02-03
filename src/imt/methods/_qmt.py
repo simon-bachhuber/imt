@@ -73,7 +73,7 @@ class HeadCor(Method):
         q1 = _vqf(gyr1, acc1, mag1, params=dict(Ts=Ts))
         q2 = _vqf(gyr2, acc2, mag2, params=dict(Ts=Ts))
 
-        ts = np.arange(T * Ts, step=Ts)
+        ts = np.linspace(0, (T - 1) * Ts, T)
         if self.dof == 1:
             if self.axes_directions is None:
                 axis_imu1, axis_imu2 = qmt.jointAxisEstHingeOlsson(
