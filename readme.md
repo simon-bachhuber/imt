@@ -12,7 +12,8 @@ Plug-and-play solutions for standard use-cases are provided, such as:
 - Knee Joint Angle Tracking (see `examples/knee_angle_tracking.ipynb`)
 - Shoulder Joint Tracking (see `examples/shoulder_tracking.ipynb`)
 - Gait Tracking (see `/examples/lower_extremities_*.ipynb`)
-- Full-body Motion Capture (soon)
+- Head Tracking (see `examples/head_tracking.ipynb`)
+- Full-body Motion Capture
 
 Most methods can be applied both online, allowing for real-time motion tracking, as well as offline.
 

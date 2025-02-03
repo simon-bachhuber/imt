@@ -116,7 +116,7 @@ class VisOptions(NamedTuple):
 
     show_stars: bool = True
     show_floor: bool = False
-    floor_material: str = "grey"
+    floor_material: str = "matplane"
 
     show_joint_to_joint: bool = True
     joint_to_joint_color: list[float] = [0.5, 0.5, 0.5, 1]
