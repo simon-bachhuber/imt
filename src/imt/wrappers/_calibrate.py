@@ -5,7 +5,7 @@ from ._joint_tracker import JointTracker1D
 
 
 class CalibrateMag(MethodWrapper):
-    def apply(self, T, acc1, acc2, gyr1, gyr2, mag1, mag2):
+    def apply(self, T: int | None, acc1, acc2, gyr1, gyr2, mag1, mag2):
         assert T is not None, "`CalibrateMag` requires offline application"
 
         Ts = self.getTs()
@@ -25,7 +25,7 @@ def _calibrate_mag(gyr, acc, mag, Ts):
 
 
 class SenToSeg1DCal(MethodWrapper):
-    def apply(self, T, acc1, acc2, gyr1, gyr2, mag1, mag2):
+    def apply(self, T: int | None, acc1, acc2, gyr1, gyr2, mag1, mag2):
         assert T is not None, "`SenToSeg1DCal` requires offline application"
         # `q_cor` is rotation from 1 to 1'
         q_cor, j2 = JointTracker1D._q_cor(acc1, acc2, gyr1, gyr2)

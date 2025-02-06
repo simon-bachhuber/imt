@@ -43,7 +43,7 @@ class RIANN(Method):
     def copy(self):
         return self
 
-    def apply(self, T: int | float, acc1, acc2, gyr1, gyr2, mag1, mag2):
+    def apply(self, T: int | None, acc1, acc2, gyr1, gyr2, mag1, mag2):
         if T is None:
             raise Exception("`RIANN` does not support `online` application")
 

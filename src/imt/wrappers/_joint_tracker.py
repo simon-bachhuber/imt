@@ -5,7 +5,7 @@ from .._base import MethodWrapper
 
 
 class JointTracker1D(MethodWrapper):
-    def apply(self, T, **kwargs):
+    def apply(self, T: int | None, **kwargs):
         assert T is not None, "`JointTracker1D` requires offline application"
         # `qhat` is from 2-to-1
         qhat, extras = super().apply(T, **kwargs)

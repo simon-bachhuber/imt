@@ -33,7 +33,7 @@ class DeadReckoning(MethodWrapper):
         super().__init__(method)
         self.zvu = zvu
 
-    def apply(self, T, **kwargs):
+    def apply(self, T: int | None, **kwargs):
         assert T is not None, "`DeadReckoning` requires offline application"
         qhat, extras = super().apply(T, **kwargs)
 

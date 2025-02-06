@@ -28,7 +28,7 @@ class VQF(Method):
         self.offline = offline
         self.strict = use_mag_only_if_both
 
-    def apply(self, T: int | float, acc1, acc2, gyr1, gyr2, mag1, mag2):
+    def apply(self, T: int | None, acc1, acc2, gyr1, gyr2, mag1, mag2):
         mag1, mag2 = self._process_mag(mag1, mag2)
 
         if T is None:

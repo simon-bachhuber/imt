@@ -14,7 +14,7 @@ class RING_2S(Method):
     N = 2
     F = 6
 
-    def apply(self, T, acc1, acc2, gyr1, gyr2, mag1, mag2):
+    def apply(self, T: int | None, acc1, acc2, gyr1, gyr2, mag1, mag2):
         X = np.zeros((1 if T is None else T, self.N, self.F))
         assert acc1 is not None, "`RING_2S` only supports relative orientation"
 
@@ -77,7 +77,7 @@ class RING(Method):
 
         self.N = {6: 1, 1: 2, 2: 3, 3: 4}[dof]
 
-    def apply(self, T, acc1, acc2, gyr1, gyr2, mag1, mag2):
+    def apply(self, T: int | None, acc1, acc2, gyr1, gyr2, mag1, mag2):
         X = np.zeros((1 if T is None else T, self.N, 9))
         if acc1 is None and gyr1 is None:
             assert self.dof == 6

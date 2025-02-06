@@ -33,7 +33,7 @@ class LPF(MethodWrapper):
             Ts = self.getTs()
             setattr(self, name, [_LPF(f, Ts) for _ in range(N)])
 
-    def apply(self, T, acc1, acc2, gyr1, gyr2, mag1, mag2):
+    def apply(self, T: int | None, acc1, acc2, gyr1, gyr2, mag1, mag2):
         if self.acc_f_cutoff is not None:
             acc1 = self._lpfs_acc[0].step(acc1)
             acc2 = self._lpfs_acc[1].step(acc2)

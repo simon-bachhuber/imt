@@ -17,7 +17,7 @@ class FractualStepping(MethodWrapper):
     def getTs(self) -> float:
         return self._Ts
 
-    def apply(self, T, **kwargs):
+    def apply(self, T: int | None, **kwargs):
         return self._apply_unrolled(T, **kwargs)
 
     def _apply_timestep(self, **kwargs):

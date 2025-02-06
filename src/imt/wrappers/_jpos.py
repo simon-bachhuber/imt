@@ -131,7 +131,7 @@ class JointPosition(MethodWrapper):
         self.dof_is_1d = dof_is_1d
         self.verbose = verbose
 
-    def apply(self, T, acc1, acc2, gyr1, gyr2, mag1, mag2):
+    def apply(self, T: int | None, acc1, acc2, gyr1, gyr2, mag1, mag2):
         qhat, extras = super().apply(
             T=T, acc1=acc1, acc2=acc2, gyr1=gyr1, gyr2=gyr2, mag1=mag1, mag2=mag2
         )
