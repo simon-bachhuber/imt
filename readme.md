@@ -22,8 +22,8 @@ Most methods can be applied both online, allowing for real-time motion tracking,
 
 | Class    | Publication/Author             | $a_p$ | $g_p$ | $m_p$ | $a_i$ | $g_i$ | $m_i$ | Online |
 |----------|-------------------------|-------|-------|-------|-------|-------|-------|--------|
-| `imt.methods.RIANN`        | Weber et al. (2021), https://www.mdpi.com/2673-2688/2/3/28      | ✘     | ✘     | ✘     | ✔     | ✔     | ✘     | ✘      |
-| `imt.methods.VQF`        | Laidig et al. (2022), https://arxiv.org/abs/2203.17024    | ✘     | ✘     | ✘     | ✔     | ✔     | ◯     | ✔      |
+| `imt.methods.RIANN`        | Weber et al. (2021), https://www.mdpi.com/2673-2688/2/3/28      | ✔     | ✔     | ✘     | ✔     | ✔     | ✘     | ✘      |
+| `imt.methods.VQF`        | Laidig et al. (2022), https://arxiv.org/abs/2203.17024    | ✔     | ✔     | ◯     | ✔     | ✔     | ◯     | ✔      |
 | `imt.methods.HeadCor(method_1d="1d_corr")`        | Laidig et al. (2017), https://pubmed.ncbi.nlm.nih.gov/28813947/         | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✘      |
 | `imt.methods.HeadCor(method_1d="euler_1d")`        | Lehmann et al. (2020), https://api.semanticscholar.org/CorpusID:214710126         | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✘      |
 | `imt.methods.HeadCor(method_1d="euler_2d")`        | Laidig et al. (2019), https://ieeexplore.ieee.org/document/8857535         | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✘      |
@@ -36,7 +36,7 @@ Most methods can be applied both online, allowing for real-time motion tracking,
 | `imt.wrappers.JointPosition`        | Seel et al. (2012), https://ieeexplore.ieee.org/document/6402423        | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✘      |
 | `imt.wrappers.LPF`        | Bachhuber        | ◯      | ◯     | ◯     | ◯     | ◯      | ◯     |  ✔      |
 
-In the table $a_i$ is the acceleterometer data of the body $i$. Let $p$ be the body index of the $i$-th body, then $a_p$ is the parent-body's accelereometer data. $g_{i/p}$ and $m_{i/p}$ are gyroscope and magnetometer, respectively. ✔ means that the algorithms uses this information, ✘ means that it doesn't, and ◯ means that it can use that information.
+In the table $a_i$ is the acceleterometer data of the body $i$. Let $p$ be the body index of the $i$-th body's parent, then $a_p$ is the parent-body's accelereometer data. $g_{i/p}$ and $m_{i/p}$ are gyroscope and magnetometer, respectively. ✔ means that the algorithms uses this information, ✘ means that it doesn't, and ◯ means that it can use that information.
 
 Plug-and-play solutions for standard use-cases are provided, such as:
 - Knee Joint Angle Tracking (see `examples/knee_angle_tracking.ipynb`)
