@@ -17,6 +17,16 @@ Plug-and-play solutions for standard use-cases are provided, such as:
 
 Most methods can be applied both online, allowing for real-time motion tracking, as well as offline.
 
+| Class    | Publication             | $a_p$ | $g_p$ | $m_p$ | $a_i$ | $g_i$ | $m_i$ | Online |
+|----------|-------------------------|-------|-------|-------|-------|-------|-------|--------|
+| `imt.methods.RIANN`        | Weber et al. (2021), https://www.mdpi.com/2673-2688/2/3/28      | ✘     | ✘     | ✘     | ✔     | ✔     | ✘     | ✘      |
+| `imt.methods.VQF`        | Laidig et al. (2022), https://arxiv.org/abs/2203.17024    | ✘     | ✘     | ✘     | ✔     | ✔     | ◯     | ✔      |
+| `imt.methods.HeadCor(method_1d="1d_corr")`        | Laidig et al. (2017), https://pubmed.ncbi.nlm.nih.gov/28813947/         | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✘      |
+| `imt.methods.HeadCor(method_1d="euler_1d")`        | Lehmann et al. (2020), https://api.semanticscholar.org/CorpusID:214710126         | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✘      |
+| `imt.methods.HeadCor(method_1d="euler_2d")`        | Laidig et al. (2019), https://ieeexplore.ieee.org/document/8857535         | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✘      |
+| `imt.methods.RING`        | Bachhuber et al. (2024), https://openreview.net/forum?id=h2C3rkn0zR        | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✔      |
+| `imt.methods.RNNO`        | EMBC 2025        | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✔      |
+
 ## Knee Joint Angle Tracking
 ```python
 import imt
