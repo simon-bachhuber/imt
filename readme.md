@@ -8,16 +8,19 @@ This python package combines many well-established methods to provide a unified 
 > 
 > You can install with `pip install git+https://github.com/simon-bachhuber/imt.git`.
 
-Plug-and-play solutions for standard use-cases are provided, such as:
-- Knee Joint Angle Tracking (see `examples/knee_angle_tracking.ipynb`)
-- Shoulder Joint Tracking (see `examples/shoulder_tracking.ipynb`)
-- Gait Tracking (see `/examples/lower_extremities_*.ipynb`)
-- Head Tracking (see `examples/head_tracking.ipynb`)
-- Full-body Motion Capture
+## Quickstart
+```python
+import imt
 
-Most methods can be applied both online, allowing for real-time motion tracking, as well as offline.
+solver = imt.Solver(graph=[-1, 0], methods=None, Ts=0.01)
+imu_data = {0: dict(acc=acc1, gyr=gyr1), 1: dict(acc=acc2, gyr=gyr2)}
+quaternions, extras = solver.step(imu_data)
+```
 
-| Class    | Publication             | $a_p$ | $g_p$ | $m_p$ | $a_i$ | $g_i$ | $m_i$ | Online |
+In this package, `imt.methods` are the core algorithms that estimate orientations. They are resposible for the first output `quaternions` of `quaternions, extras = imt.Solver.step(...)`. `imt.wrappers` are used to wrap `imt.methods` and estimate additional quantities or augment the wrapped method. 
+Most methods can be applied both online, allowing for real-time motion tracking, as well as offline. The following algorithms are available:
+
+| Class    | Publication/Author             | $a_p$ | $g_p$ | $m_p$ | $a_i$ | $g_i$ | $m_i$ | Online |
 |----------|-------------------------|-------|-------|-------|-------|-------|-------|--------|
 | `imt.methods.RIANN`        | Weber et al. (2021), https://www.mdpi.com/2673-2688/2/3/28      | ✘     | ✘     | ✘     | ✔     | ✔     | ✘     | ✘      |
 | `imt.methods.VQF`        | Laidig et al. (2022), https://arxiv.org/abs/2203.17024    | ✘     | ✘     | ✘     | ✔     | ✔     | ◯     | ✔      |
@@ -26,6 +29,20 @@ Most methods can be applied both online, allowing for real-time motion tracking,
 | `imt.methods.HeadCor(method_1d="euler_2d")`        | Laidig et al. (2019), https://ieeexplore.ieee.org/document/8857535         | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✘      |
 | `imt.methods.RING`        | Bachhuber et al. (2024), https://openreview.net/forum?id=h2C3rkn0zR        | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✔      |
 | `imt.methods.RNNO`        | EMBC 2025        | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✔      |
+| `imt.wrappers.CalibrateMag`        | Laidig        | ✔/◯      | ✔/◯     | ✔/◯     | ✔/◯     | ✔/◯      | ✔/◯     | ✘      |
+| `imt.wrappers.SenToSeg1DCal`        | Bachhuber        | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✘      |
+| `imt.wrappers.DeadReckoning`        | Bachhuber        | ✘      | ✘     | ✘     | ✔     | ✔      |   ◯   | ✘      |
+| `imt.wrappers.JointTracker1D`        | Bachhuber        | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✘      |
+| `imt.wrappers.JointPosition`        | Seel et al. (2012), https://ieeexplore.ieee.org/document/6402423        | ✔      | ✔     | ✘     | ✔     | ✔      | ✘     | ✘      |
+| `imt.wrappers.LPF`        | Bachhuber        | ◯      | ◯     | ◯     | ◯     | ◯      | ◯     |  ✔      |
+
+In the table $a_i$ is the acceleterometer data of the body $i$. Let $p$ be the body index of the $i$-th body, then $a_p$ is the parent-body's accelereometer data. $g_{i/p}$ and $m_{i/p}$ are gyroscope and magnetometer, respectively. ✔ means that the algorithms uses this information, ✘ means that it doesn't, and ◯ means that it can use that information.
+
+Plug-and-play solutions for standard use-cases are provided, such as:
+- Knee Joint Angle Tracking (see `examples/knee_angle_tracking.ipynb`)
+- Shoulder Joint Tracking (see `examples/shoulder_tracking.ipynb`)
+- Gait Tracking (see `/examples/lower_extremities_*.ipynb`)
+- Head Tracking (see `examples/head_tracking.ipynb`)
 
 ## Knee Joint Angle Tracking
 ```python
@@ -38,7 +55,7 @@ solver = imt.Solver(
     body_name=["thigh", "shank"]
 )
 imu_data = {"thigh": dict(acc=acc1, gyr=gyr1), "shank": dict(acc=acc2, gyr=gyr2)}
-quaternions, _ = solver.step(imu_data)
+quaternions, extras = solver.step(imu_data)
 ```
 ![knee-angle-tracking-example](media/knee_tracking.gif)
 
@@ -53,17 +70,19 @@ solver = imt.Solver(
     body_name=["chest", "upperarm"]
 )
 imu_data = {"chest": dict(acc=acc1, gyr=gyr1), "upperarm": dict(acc=acc2, gyr=gyr2)}
-quaternions, _ = solver.step(imu_data)
+quaternions, extras = solver.step(imu_data)
 ```
 ![shoulder-joint-tracking-example](media/shoulder_tracking.gif)
 
-# Usage Example Three-Segment Kinematic Chain
+## Advanced Usage Example
 
 ```python
 import imt
 import numpy as np
 
-# Define a graph with one body connecting to the world/earth (0) and two child bodies (1 and 2)
+# Let's consider a *three-segment KC*
+
+# First, define a graph with one body connecting to the world/earth (0) and two child bodies (1 and 2)
 graph = [-1, 0, 0]
 
 # Define the methods that are used for solving the relative orientation subproblems in the graph
@@ -94,7 +113,7 @@ imu_data = {
 }
 
 # Process the IMU data to compute body-to-world orientations
-quaternions, _ = solver.step(imu_data)
+quaternions, extras = solver.step(imu_data)
 print("Quaternions (non-batched):", quaternions)
 # so the '0' entry is the quaternion from body '0' to body '-1' (earth)
 # similarly, the '1' entry is the quaterion from body '1' to body '0'
@@ -121,7 +140,7 @@ imu_data_batched = {
 }
 
 # Process the time-batched IMU data to compute body-to-world orientations
-quaternions_batched, _ = solver.step(imu_data_batched)
+quaternions_batched, extras = solver.step(imu_data_batched)
 print("Quaternions (time-batched):", quaternions_batched)
 >>> {0: array([[...]]), 1: array([[...]]), 2: array([[...]])}
 ```
