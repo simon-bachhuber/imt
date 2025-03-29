@@ -71,6 +71,9 @@ class Method:
     def unwrapped(self):
         return self
 
+    def close(self):
+        pass
+
 
 class MethodWrapper(Method):
     def __init__(self, method: Method):
@@ -124,3 +127,6 @@ class MethodWrapper(Method):
         copy_self._method = _method.copy()
         self._method = _method
         return copy_self
+
+    def close(self):
+        self._method.close()

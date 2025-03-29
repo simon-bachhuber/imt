@@ -221,3 +221,7 @@ class Solver:
 
     def print_graph(self):
         self._graph.print(self._body_names)
+
+    def close(self):
+        for sub_solver in self._sub_solvers:
+            sub_solver.close()
