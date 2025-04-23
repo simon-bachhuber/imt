@@ -1,8 +1,11 @@
+from collections import deque
+from multiprocessing import Process
+from multiprocessing import Queue
 from typing import Optional
 import warnings
 
 import numpy as np
-import qmt
+from qmt import jointAxisEstHingeOlsson
 from scipy.optimize import minimize
 from scipy.signal import butter
 from scipy.signal import sosfiltfilt
@@ -44,6 +47,7 @@ def _jpos_solve(
     hz: float,
     verbose: bool = False,
     seed: Optional[int] = None,
+    initial_guess: Optional[np.ndarray] = None,
     opt_kwargs: dict = dict(method="BFGS"),
 ):
     """Joint Translation Estimation. Estimates the vector from joint center to IMU 1
@@ -60,6 +64,7 @@ def _jpos_solve(
         seed (int, optional): Seed used for initilization of the optimization. By
             default this function is non-deterministic. Fixing the seed makes this
             function deterministic.
+        initial_guess (np.ndarray, optional): (6,) guess (r1, r2)
         opt_kwargs (dict, optional): Kwargs for `scipy.optimize.minimze`
 
     Returns:
@@ -84,11 +89,13 @@ def _jpos_solve(
         if max_val > 10:
             warnings.warn(
                 f"Found very large gyroscope or phi value of {max_val}. Are you sure "
-                "you have provided Gyroscope and `phi` value in radians?"
+                "you have provided Gyroscope values in radians?"
             )
 
-    acc1 = _lpf(acc1, hz, 25 if hz > 50 else 15)
-    acc2 = _lpf(acc2, hz, 25 if hz > 50 else 15)
+    acc1 = _lpf(acc1, hz, 10)
+    acc2 = _lpf(acc2, hz, 10)
+    gyr1 = _lpf(gyr1, hz, 10)
+    gyr2 = _lpf(gyr2, hz, 10)
 
     gyrdot1 = _dot(gyr1, hz)
     gyrdot2 = _dot(gyr2, hz)
@@ -111,8 +118,9 @@ def _jpos_solve(
         )
         return np.mean(e**2)
 
-    initial_params = np.random.normal(size=(6,)) * 0.2
-    res = minimize(mean_squared_residual, initial_params, **opt_kwargs)
+    if initial_guess is None:
+        initial_guess = np.random.normal(size=(6,)) * 0.2
+    res = minimize(mean_squared_residual, initial_guess, **opt_kwargs)
     final_residual = mean_squared_residual(res.x)
 
     if verbose:
@@ -125,53 +133,138 @@ def _jpos_solve(
     )
 
 
+def _compute_j1_j2(Ts, verbose, dof_is_1d, acc1, acc2, gyr1, gyr2):
+    n_initival_opt_values = 3
+    j1 = j2 = None
+    res = 1e16
+    for _ in range(n_initival_opt_values):
+        _j1, _j2, infos = _jpos_solve(
+            acc1,
+            gyr1,
+            acc2,
+            gyr2,
+            1 / Ts,
+            verbose=verbose,
+        )
+        _res = infos["final residual m/s**2"]
+
+        if _res < res:
+            j1, j2 = _j1, _j2
+
+    if dof_is_1d:
+        axis_imu1, axis_imu2 = jointAxisEstHingeOlsson(
+            acc1,
+            acc2,
+            gyr1,
+            gyr2,
+            estSettings=dict(quiet=True),
+        )
+        j1 = _project_out_axis(j1, axis_imu1[:, 0])
+        j2 = _project_out_axis(j2, axis_imu2[:, 0])
+
+    return j1, j2
+
+
+def _project_out_axis(r, axis):
+    return r - axis * (axis @ r)
+
+
+def _worker_target(queue, Ts, verbose, dof_is_1d, acc1, acc2, gyr1, gyr2):
+    j1, j2 = _compute_j1_j2(Ts, verbose, dof_is_1d, acc1, acc2, gyr1, gyr2)
+    queue.put((j1, j2))
+
+
 class JointPosition(MethodWrapper):
-    def __init__(self, method: Method, dof_is_1d: bool = False, verbose: bool = False):
+    def __init__(
+        self,
+        method: Method,
+        dof_is_1d: bool = False,
+        verbose: bool = False,
+        num_workers: int = 0,
+        buffer_size_T: float = 10,
+        stop_once_buffer_full: bool = False,
+    ):
         super().__init__(method)
         self.dof_is_1d = dof_is_1d
         self.verbose = verbose
+        self.num_workers = num_workers
+        self.buffer_size_T = buffer_size_T
+        self.stop_once_buffer_full = stop_once_buffer_full
+
+    def _compute_j1_j2_mp(self, acc1, acc2, gyr1, gyr2):
+        if self.stop_once_buffer_full:
+            if self.acc1_buffer.maxlen == len(self.acc1_buffer):
+                return
+
+        self.acc1_buffer.append(acc1)
+        self.acc2_buffer.append(acc2)
+        self.gyr1_buffer.append(gyr1)
+        self.gyr2_buffer.append(gyr2)
+
+        if self.process is None or not self.process.is_alive():
+            if self.process is not None:
+                self.j1, self.j2 = self.queue.get()
+            acc1_long = np.vstack(self.acc1_buffer)
+            acc2_long = np.vstack(self.acc2_buffer)
+            gyr1_long = np.vstack(self.gyr1_buffer)
+            gyr2_long = np.vstack(self.gyr2_buffer)
+
+            if acc1_long.shape[0] > int(1 / self.getTs()):
+                self.process = Process(
+                    target=_worker_target,
+                    args=(
+                        self.queue,
+                        self.getTs(),
+                        self.verbose,
+                        self.dof_is_1d,
+                        acc1_long,
+                        acc2_long,
+                        gyr1_long,
+                        gyr2_long,
+                    ),
+                )
+                self.process.start()
 
     def apply(self, T: int | None, acc1, acc2, gyr1, gyr2, mag1, mag2):
         qhat, extras = super().apply(
             T=T, acc1=acc1, acc2=acc2, gyr1=gyr1, gyr2=gyr2, mag1=mag1, mag2=mag2
         )
 
-        n_initival_opt_values = 3
-        j1 = j2 = None
-        res = 1e16
-        for _ in range(n_initival_opt_values):
-            _j1, _j2, infos = _jpos_solve(
-                acc1,
-                gyr1,
-                acc2,
-                gyr2,
-                1 / self.getTs(),
-                verbose=self.verbose,
+        if self.num_workers > 0:
+            self._compute_j1_j2_mp(acc1, acc2, gyr1, gyr2)
+        else:
+            self.j1, self.j2 = _compute_j1_j2(
+                self.getTs(), self.verbose, self.dof_is_1d, acc1, acc2, gyr1, gyr2
             )
-            _res = infos["final residual m/s**2"]
-
-            if _res < res:
-                j1, j2 = _j1, _j2
-
-        if self.dof_is_1d:
-            axis_imu1, axis_imu2 = qmt.jointAxisEstHingeOlsson(
-                acc1,
-                acc2,
-                gyr1,
-                gyr2,
-                estSettings=dict(quiet=True),
-            )
-            j1 = self._project_out_axis(j1, axis_imu1[:, 0])
-            j2 = self._project_out_axis(j2, axis_imu2[:, 0])
 
         extras.update(
             {
-                "joint-center-to-body1": j1,
-                "joint-center-to-body2": j2,
+                "joint-center-to-body1": self.j1,
+                "joint-center-to-body2": self.j2,
             }
         )
         return qhat, extras
 
-    @staticmethod
-    def _project_out_axis(r, axis):
-        return r - axis * (axis @ r)
+    def reset(self):
+        super().reset()
+
+        Ts = self.getTs()
+        buffer_size = int(self.buffer_size_T / Ts)
+
+        self.acc1_buffer = deque(maxlen=buffer_size)
+        self.acc2_buffer = deque(maxlen=buffer_size)
+        self.gyr1_buffer = deque(maxlen=buffer_size)
+        self.gyr2_buffer = deque(maxlen=buffer_size)
+        self.j1 = np.zeros((3,))
+        self.j2 = np.zeros((3,))
+        self.queue = Queue()
+        self.process = None
+
+    def close(self):
+        super().close()
+        if (
+            self.num_workers > 0
+            and hasattr(self, "process")
+            and self.process is not None
+        ):
+            self.process.join()
