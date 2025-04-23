@@ -3,6 +3,7 @@ from . import _riann
 from . import _ring
 from . import _rnno
 from . import _vqf
+from ._noop import NoOpMethod
 from ._qmt import HeadCor
 from ._riann import RIANN
 from ._ring import RING
