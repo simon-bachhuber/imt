@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "imt-imt"
-version = "0.2.0"
+version = "0.2.1"
 authors = [
   { name="Simon Bachhuber", email="simon.bachhuber@fau.de" },
 ]
@@ -17,7 +17,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "qmt",
+    "qmt @ git+https://github.com/simon-bachhuber/qmt",
     "onnxruntime",
     "dm-tree",
     "scipy",
